@@ -1,0 +1,365 @@
+---
+title: "UF DSI - Intro to R"
+author: "Justin Mathew"
+date: "March 30, 2016"
+output: html_document
+---
+
+####DISCLAIMER - This tutorial is based largely on the 2015 Tel Aviv University R Workshop put together by Maria Novosolov.
+
+#Topic 1 - Basic Operations and Functions in R
+
+What is a function? 
+
+``
+f <- function(<arguments>) {
+## Do something interesting
+}
+``
+
+We will cover creating your own functions at a later time. 
+For now your friend is the ``args()`` function
+
+Every variable you create is saved to R memory and many times R doesn't forget just because you closed it and reopened it later. Thus you should always clean your environment when you start working on something new or with updated data.
+This can be done with the function 
+```{r}
+rm(list=ls()) # rm = remove; ls = list
+```
+
+It also possible to just see what is stored in R's memory and then remove only a specific object. 
+To see what is stored we use just ls()
+
+``
+ls()
+``
+
+To remove an object we use: ('object' represents the object we want to remove)
+
+``
+rm(object)
+``
+
+##Data Structure Types
+
+1. Vector
+2. Matrix
+3. Array
+4. Data frame
+5. List
+
+###Creating a vector
+
+```{r}
+a<-c(1,2,3,4,5,6,7)   # a numerical vector
+a
+
+b<-c("one","two","three")   # or character vector
+b
+
+c<-c(TRUE,FALSE,FALSE,TRUE)  # or logical vector
+c
+```
+
+###Creating a matrix
+```{r}
+# Matrix with data in it
+your.matrix<-matrix(1:20,
+                    nrow=5,
+                    ncol=4) ##byrow=TRUE allows to fill by row
+your.matrix
+
+# empty matrix
+empty.matrix<-matrix(NA,nrow=5,ncol=4)
+```
+
+###Creating an array
+```{r}
+# this is an empty array
+my.array<-array(NA,dim=c(3,2,4),
+                dimnames=list(
+                  c("a","b","c"),
+                  c("d","e"),
+                  c("f","g","h","i")
+                  )
+                )
+my.array
+```
+
+###Creating a data frame
+```{r}
+studentID <- c(1, 2, 3, 4)
+age <- c(25, 29, 22, 23)
+university <- c("UF", "FSU", "UF", "UGA")
+hired <- c(TRUE, FALSE, TRUE, FALSE)
+studentdata <- data.frame(studentID, age, university, hired)
+studentdata
+
+# Or we can create an empty data frame
+data_frame<-data.frame(studentID=factor(),
+              age=numeric(),
+              university=factor(),
+              hired=factor()
+              )
+```
+
+###Creating a list
+```{r}
+my.list<-list(studentdata,my.array)
+my.list
+```
+
+
+
+##Working with Data
+Setting your working directory:
+
+If you are not sure in which directory you are you can look on the headline of the console, there you'll find written in grey the directory you are working in now.
+An easier way is to ask R to tell you in which directory you are
+```{r}
+getwd()
+```
+
+Remember: the path always have to be in double quotation marks ("") and with either forward slash (/) or two backward slashes(\\\\)
+
+```{r, cache = TRUE}
+setwd("C:/Users/Justin/Google Drive/DSI Shared Files/Workshops/R")
+```
+
+
+After we set the working directory we want to upload the data into R. This we will do using the function **read.csv** or **read.txt** depends on how you saved your data.
+
+
+
+```{r}
+args(read.csv)
+```
+
+Now we can import a dataset:
+We will use pigeon racing data...why? I don't know. It's cool?
+We can import the data by ``pigeons <- read.csv("pigeon_racing.csv")`` because we have already specified the working 
+directory. 
+
+OR
+
+```{r}
+pigeons<-read.csv("https://raw.githubusercontent.com/dsiufl/R-Workshops/master/pigeon_racing.csv", header=TRUE)
+
+head(pigeons)
+```
+
+The **head()** function shows you the top six rows while **tail()** shows the last six rows. 
+Another useful function is the **str()** which gives a description of the structure of the data.
+```{r}
+str(pigeons)
+```
+
+We can isolate a particular variable using the **$** character. 
+```{r}
+pigeons$Pos #Lists the all the values in the positions variable
+```
+ The function **summary()** can give you a summary of a variable in a data set. 
+
+```{r}
+summary(pigeons$Speed)
+```
+
+###Determining Data Types 
+
+The **class()** function allows you to determine the type of an object.
+
+1. Numeric -  basically a decimal value. 
+```{r}
+class(pigeons$Speed)
+```
+```{r}
+is.numeric(pigeons$Speed) #is this object a numeric?
+```
+```{r}
+x <- "5.24"
+class(x)
+x<-as.numeric(x) #view x as numeric
+x
+class(x)
+```
+
+2. Integer - Positive or Negative integes (no decimals)
+
+```{r}
+class(pigeons$Pos)
+is.integer(pigeons$Pos)
+x<-3.14
+class(x)
+x<-as.integer(x)
+x
+class(x)
+```
+
+3. Character - used for string values denoted by quotations usually ``"string"``.
+
+```{r}
+x<- "Hello"
+class(x)
+x<- 3.14
+class(as.character(x))
+```
+
+4. Logical - TRUE or FALSE
+
+```{r}
+x<-TRUE
+class(x)
+as.numeric(x)
+```
+
+Other types include complex numbers and factors. 
+
+
+### Data subsetting
+
+There are several ways to subset your data. 
+The simplest way to subset the data is by rows or by columns.
+
+The number before the comma will be the row index and after the comma the column index.
+
+``
+your.data.name[,]
+``
+
+```{r}
+newdata<-pigeons[3,] #gives you the 3 row
+newdata<-pigeons[,4] #gives you the 4th column
+newdata<-pigeons[,1:4] #gives you from the 1st to the 4th column
+newdata<-pigeons[,c(1,4,8)] #for specific column choice
+# you can also use names of the columns instead of the numbers
+newdata<-pigeons[,c("Pos","Color","Speed")]
+```
+
+We can subset for specific entries. For example, if we were interested in the third place pigeon:
+
+```{r}
+pigeons[pigeons$Pos == 3,]
+```
+
+What if we want the top 10 pigeons? or pigeons faster than 160 km/hr/
+
+```{r}
+top10 <- pigeons[pigeons$Pos <= 10,]
+fast <- pigeons[pigeons$Speed > 160,]
+```
+
+We can use the **subset()** function to make some things a little easier.
+The arguments of this function require the data and a logical expression. 
+Let's say we are interested in the how the pigeons bred by the Texas Outlaws did. 
+
+```{r}
+texout <- subset(pigeons, Breeder == 'Texas Outlaws')
+texout
+```
+
+Let's see how the Texas Outlaws and Jerdee did. 
+
+```{r}
+rivals <- subset(pigeons, 
+                 Breeder %in% c('Texas Outlaws', 'Jerdee'))
+rivals
+```
+
+
+### Summary statistics of your data
+
+```{r}
+mean(pigeons$Speed, na.rm=TRUE)
+sd(pigeons$Speed, na.rm = TRUE)
+median(pigeons$Speed, na.rm = TRUE)
+range(pigeons$Speed, na.rm = TRUE)
+```
+
+We can use the **aggregate(variable, BY = list(), function)** function to collapse data in R using one or more BY variables and a defined function.
+Let's say we are interested in the mean speed for each of the breeders (who may or may not have more than one pigeon).
+
+```{r}
+aggregate(pigeons$Speed, list(pigeons$Breeder), mean)
+```
+
+
+
+
+##DPLYR
+``
+install.packages("dplyr")
+``
+
+A package designed to manipulate data frames extremely well. 
+
+5 Basic Commands:
+
+1. filter()
+2. select()
+3. arrange()
+4. mutate()
+5. summarize()
+
+###Filter
+```{r}
+library(dplyr)
+filter(pigeons, Breeder == 'Texas Outlaws')
+filter(pigeons, ifelse(Breeder == 'Texas Outlaws', 
+                       Speed >160, 
+                       Color == 'RED'
+                       )
+       ) #Note lack of $ subsetting
+```
+
+###Select
+```{r}
+s<-select(pigeons, Color, Sex)
+head(s)
+s<-select(pigeons, Breeder:Speed)
+head(s)
+s<-select(pigeons, -Pigeon)
+head(s)
+```
+
+###Arrange
+```{r}
+a<-arrange(pigeons, Color, Speed)
+head(a)
+a<- arrange(pigeons, Color, -Speed)  #or arrange(pigeons, Color, desc(Speed))
+head(a)
+```
+
+###Mutate
+```{r}
+m<-mutate(pigeons, km.per.sec = Speed/60/60)
+head(m)
+```
+
+###Summarize
+```{r}
+pigeon.color <- group_by(pigeons, Color)
+summarize(pigeon.color, mean(Speed))
+```
+
+###Chaining (or Piping) **%>%**
+  Takes the output of the former function and makes it the input for the next function. 
+
+```{r}
+pigeons %>% 
+  group_by(Color) %>%
+  summarize(mean(Speed))
+```
+
+Lets say we would like to know the most popular pigeon color for the top 100 fastest birds. 
+
+```{r}
+pigeons %>%
+  filter(Pos <= 100) %>%
+  group_by(Color) %>% 
+  summarize(count = n()) %>%
+  mutate(color.rank = rank(-count)) %>%
+  arrange(color.rank)
+```
+
+
+
+
