@@ -1,0 +1,270 @@
+---
+title: "R2"
+author: "Tyler Richards"
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+The whole point of R is to give you a skillset that allows you to generate insights that you couldn't do manually. 
+I want all of you, after having taken these workshops, to feel comfortable working through whatever problems you have in a reproducable and interesting way. The best way to do that is to supply an example of how i've done this.
+Over the course of my past two years in R, some of the projects I've worked on are
+1. predicting how many senate seats a student party was going to get
+2. analyzing statements and tweets of the trump administration to try to prove racial intent behind the immigration ban
+and
+3. an improvement of a ranking algorithm for soccer games in the english premiere league
+
+I'll go through how I did the final one step by step, and we'll learn how to approach problems and tackle them in R.
+
+
+The Elo rating system is a dynamically updated rating system originally created for chess by Arpad Elo that thrives in
+ranking head to head interactions with many iterations. By the end of this tutorial, any R user should be able to
+calculate the Elo score of any English Premier League Team during the course of any season, and have a basic
+understanding of how apply this technique to other leagues and sports. 
+
+### Let's get started!
+
+In broad strokes the steps to this analysis are:
+
+1. Find and load data
+2. Clean and format data
+3. Apply Elo
+4. Visualize results
+
+Below is all the packages that we will use. If you haven't installed any of them, do so now using the install.packages() function! 
+
+```{r message=FALSE}
+library(EloRating)
+library(ggplot2)
+library(dplyr)
+```
+
+  
+Finding and Loading Data
+
+Thankfully, [this website](http://www.football-data.co.uk/englandm.php) has an incredible amount of Premier League data. Download it to your working directory below. 
+
+```{r}
+download.file(url = "http://www.football-data.co.uk/mmz4281/1617/E0.csv", destfile = "epl1617.csv")
+```
+
+Your file is now downloaded. Use read.csv() and head() to check out the format and structure of the data. 
+
+```{r}
+epl_1617 <- read.csv("epl1617.csv")
+head(epl_1617[,1:5])
+```
+
+For the most basic application of Elo, we need to know what the result was (win, lose, draw), and who was playing. Let's use dplyr's handy case_when() function to quickly get our data in the correct format.
+
+
+```{r}
+epl_1617$winner = case_when(epl_1617$FTR == 'H' ~ as.character(epl_1617$HomeTeam),
+                            epl_1617$FTR == 'A' ~ as.character(epl_1617$AwayTeam),
+                            epl_1617$FTR == 'D' ~ as.character(epl_1617$HomeTeam))
+epl_1617$loser = case_when(epl_1617$FTR == 'A' ~ as.character(epl_1617$HomeTeam),
+                            epl_1617$FTR == 'H' ~ as.character(epl_1617$AwayTeam),
+                            epl_1617$FTR == 'D' ~ as.character(epl_1617$AwayTeam))
+
+epl_1617$Draw = case_when(epl_1617$FTR == "D" ~ TRUE,
+                          epl_1617$FTR != "D" ~ FALSE)
+head(epl_1617[,c('winner', 'loser', 'Draw')])
+```
+
+This works quite well. For the package we'll be using to calculate elo (EloRating), we need a winner, loser, and a Boolean column for a Draw in the next column. Also, if the Draw column is TRUE, it doesn't matter who is in the winner column vs the loser so I just put the home team in the winning column and the away team in the losing column.
+
+Now let's filter for the columns we need.
+
+```{r}
+epl_1617_elo <- epl_1617[,c('Date', 'winner', 'loser', 'Draw')]
+
+```
+
+
+Currently the Date column is in the wrong format, and is a factor. Use substring to get it in 'year/month/date' format and as.Date() to make R recognize it as a Date.
+
+
+```{r}
+epl_1617_elo$Date <- as.Date(epl_1617_elo$Date,"%d/%m/%Y")
+epl_1617_elo$Date <- as.character(epl_1617_elo$Date)
+substr(epl_1617_elo$Date, 1, 2) <- "20"
+epl_1617_elo$Date <- as.Date(epl_1617_elo$Date)
+head(epl_1617_elo[,1:4])
+
+```
+
+Now we have all the data in the right format. The function elo.seq returns an object with the calculated elo scores, with each team starting at 1000 points. 
+
+```{r}
+res_elo <- elo.seq(winner = epl_1617_elo$winner, loser = epl_1617_elo$loser, Date = epl_1617_elo$Date, runcheck = TRUE, draw = epl_1617_elo$Draw, progressbar = FALSE)
+summary(res_elo)
+```
+
+It worked perfectly! We know that 22% percent of matches last year were draws, and the date range is correct. We can use those fields to make sure the function did what we wanted.  We can use the eloplot() function to look at a time series calculation for each team. 
+
+```{r}
+eloplot(res_elo)
+```
+
+
+This isn't the best visualization for our use case. We can do so much better. The res_elo$mat matrix has everything we'll need. Turn it into a data frame and then view. 
+
+
+```{r}
+elo_totals <- res_elo$mat
+elo_totals <- as.data.frame(elo_totals)
+head(elo_totals[,1:5])
+```
+
+This data frame has each team's Elo score by index where the index is related to the different game days in the Premier League. Note that not every team plays on the same day, so let's add the dates to make visualization easier. 
+
+```{r}
+dates <- res_elo$truedates
+elo_totals$Dates <- dates
+```
+
+
+Now create a function for graphing each team's performance throughout the year. 
+
+```{r}
+plotting_elo <- function(team_name){
+  filtered_data <- elo_totals[,c(team_name, "Dates")]
+  filtered_data <- filtered_data[!is.na(filtered_data[,team_name]),]
+  
+  x <- ggplot(data = filtered_data, aes(x = Dates, y = filtered_data[,1])) +
+    geom_line() + 
+    ggtitle((paste("2016-2017 EPL Season: ", team_name))) +
+    labs(y = "Elo Score", x = "Date") +
+    geom_point()
+  return(x)
+}
+```
+
+Let's test it out with the winner of the 16/17 season, Chelsea. 
+
+```{r}
+Chelsea_elo <- plotting_elo("Chelsea")
+Chelsea_elo
+```
+
+This makes perfect sense to the loyal Chelsea fan that I am. Chelsea had a couple key losses to top talent in September to Arsenal and Liverpool, and tied a worse team (Swansea). The drop between December and January is explained by Chelsea's 2-0 loss to Tottenham. 
+
+Now let's check out the most continuously disappointing team in the league, Arsenal. 
+
+```{r}
+Arsenal_elo <- plotting_elo("Arsenal")
+Arsenal_elo
+```
+
+Arsenal managed to get almost to the 1200 Elo score with their late push for the Champion's League spot but still ended far below the league champions, finishing in 5th. 
+
+How does the final Elo score compare to the final league ranking? Let's extract the elo ranking from the result of our model and compare it with the actual result. 
+
+
+```{r}
+final_elo <- as.data.frame(extract.elo(res_elo))
+teams <- rownames(final_elo)
+final_elo$Team <- teams
+rownames(final_elo) <- NULL
+ActualFinal <- c("Chelsea", "Tottenham", "Man City", "Liverpool", "Arsenal", "Man United", "Everton", "Southampton", "Bournemouth", "West Brom", "West Ham", "Leicester City", "Stoke City", "Crystal Palace", "Swansea City", "Burnley", "Watford", "Hull City", "Middlesbrough", "Sunderland")
+final_elo$ActualResult <- ActualFinal
+
+colnames(final_elo) <- c("Elo Score", "Elo Rank", "Actual Final")
+head(final_elo, 20)
+```
+
+The Elo score seems to compare fairly well to the final rankings. Note that the goal was not to predict who would win the league, but to measure the skill of each team in comparison so we should not be worried with small errors like Arsenal and Liverpool being swapped. The largest error is clearly Swansea, who is ranked highly by Elo but finished near the bottom of the league. Why would that be?
+
+```{r}
+Swansea_elo <- plotting_elo("Swansea")
+Swansea_elo
+```
+
+By early April, Swansea was ranked at 775, one of the lowest scores. However, they went on a streak, beating Stoke, Everton, Sunderland, and West Brom while tying Man United, all at the end of the season. This illustrates some of the fundamental flaws of Elo, mainly that depending on the k value we specify (we used the default value) it can shift scores in a disproportionate way compared to how much games at the end of the season matter (games at the end of the season matter more for those who have the potential to win the league, get a spot in the Champion's League, or who can get relegated). Elo is therefore overly simplistic, but can provide insight regardless. 
+
+```{r}
+df = read.csv('http://www.football-data.co.uk/mmz4281/1617/E0.csv')
+
+epl <- apply(df, 1, function(row){
+  data.frame(team = c(row['HomeTeam'], row['AwayTeam']),
+             opponent = c(row['AwayTeam'], row['HomeTeam']),
+             goals = c(row['FTHG'], row['FTAG']), 
+             date = c(row['Date']),
+             home = c(1,0))
+  })
+
+epl <- do.call(rbind, epl)
+epl$goals <- as.numeric(epl$goals)
+epl[epl$goals < 0]
+
+
+
+model <- glm(goals ~ home + team + opponent, 
+             family = poisson(link = log),
+             data = epl)
+
+predict(model, data.frame(home =1, team="Chelsea", opponent = "Man United"), type = "response")
+predict(model, data.frame(home = 0, team = "Man United", opponent = "Chelsea"), type = "response")
+```
+
+```{r}
+#what I want to do here is grab the elo score for the home team and the date for each row of data
+#so I have the column name which is the team, and also
+elo_totals$Dates <- as.character(elo_totals$Dates)
+epl$team_elo <- 0
+epl$opponent_elo <- 0
+epl$team <- as.character(epl$team)
+epl$date <- as.character(epl$date)
+
+epl$date <- as.Date(epl$date, "%d/%m/%Y")
+epl$date <- as.character(epl$date)
+substr(epl$date, 1, 2) <- "20"
+
+
+#nrow(epl)
+for(i in c(1:nrow(epl))){
+  #filter the dataframe for the 
+  name <- epl[i, 1]
+  date <- epl[i, 4]
+  filtered <- cbind(elo_totals[, grep(name, colnames(elo_totals))], elo_totals[,c("Dates")])
+  colnames(filtered) <- c("team_elo", "Dates")
+  filtered <- as.data.frame(filtered)
+  filtered_by_date <- filter(filtered, Dates == epl[i,4])
+  
+  
+  epl[i,6] <- as.integer(as.character(filtered_by_date$team_elo))
+  
+}
+for(i in c(1:nrow(epl))){
+  #filter the dataframe for the 
+  name <- epl[i, 2]
+  date <- epl[i, 4]
+  filtered <- cbind(elo_totals[, grep(name, colnames(elo_totals))], elo_totals[,c("Dates")])
+  colnames(filtered) <- c("team_elo", "Dates")
+  filtered <- as.data.frame(filtered)
+  filtered_by_date <- filter(filtered, Dates == epl[i,4])
+  
+  
+  epl[i,7] <- as.integer(as.character(filtered_by_date$team_elo))
+  
+}
+
+epl$elo_difference <- epl$team_elo - epl$opponent_elo
+
+```
+
+```{r}
+
+model_with_elo <- glm(goals ~ home + team + opponent + elo_difference, 
+             family = poisson(link = log),
+             data = epl)
+predict(model_with_elo, data.frame(home =1, team="Chelsea", opponent = "Arsenal", elo_difference = 200), type = "response")
+
+```
+```{r}
+ActualFinal
+```
+
+That's the end! Thankfully, the data between leagues is in similar/identical formats so applications of this methodology for different leagues and years should be very doable for beginners and a breeze for experienced R users. 
+
+If you have any questions or comments, please reach out to me [here](mailto:tylerjrichards@gmail.com)

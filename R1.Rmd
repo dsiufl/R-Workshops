@@ -1,0 +1,254 @@
+---
+title: "R1"
+author: "Tyler Richards"
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+
+#General Programming Concepts in R 
+
+This will cover if statements and conditionals, looping variables in R, and then loading and cleaning data with dplyr
+
+
+The first bit will be a collection of very useful functions in R
+
+###Which
+'Which' returns boolean values and can be used to subset dataframes
+```{r}
+
+z <- -3:2
+which(z > 0) ##This finds the index values of the vector that satisfy the condition
+z[which(z > 0)]
+
+
+any(z < 1)
+all(z >= -3)
+all(z == 1)
+
+```
+
+###If/Else Statements
+
+if statements execute a chunk of code if a condition is met with a TRUE value
+
+```{r}
+
+x=1
+if(x > 0){
+  print('Cool')
+}
+
+```
+
+Another example
+
+```{r}
+UT=20
+UF=26
+if(UT>UF){
+  print('Woo Hoo')
+}
+```
+In this case, nothing gets printed. However, if we change the symbol direction we'll see that it gets printed
+
+```{r}
+UT=20
+UF=26
+if(UF<UT){
+  print('We lost')
+} else{
+  print('We Won')
+}
+```
+
+We can also use 'else if'
+
+```{r}
+grade=75
+if(grade>=95){
+  print('Excellent!')
+}else if (grade>=85){
+  print("Pretty good")
+} else {
+  print("RIP")
+  
+}
+```
+
+
+###Looping
+
+Looping is an easy way to cylce through iterative procedures. The common expressions used in R loops are `for` and `while` loops. In addtition, there are two clauses `break` and `next`.   
+
+####For Loops  
+These loops are used when you want to iterate a known number of times.   
+
+```{r}
+for (i in 1:10){
+  print (i)
+}
+```
+
+Let's make a for loop for 
+```{r}
+ID <- 1:100
+grade <- rnorm(100, 80, 5)
+#hist(grade)
+comment <- 1:100
+for(i in 1:100){
+  if(grade[i]>=85){
+    #print('Excellent!')
+    comment[i] <- 'excellent'
+  }else if (grade[i]>=78){
+    #print("Pretty good")
+    comment[i] <- 'pretty good'
+  } else {
+    #print("You are stupid")
+    comment[i] <- 'rip'
+    
+  }
+}
+
+report <- data.frame(ID, grade, comment)
+head(report)
+```
+
+Let's explore Grammy awards
+
+```{r}
+grammys <- c("Chance", "Adele", "Flume", "Drake", "Chainsmokers")
+char_num <- c()
+for(name in grammys){
+  char_num[name] <- nchar(name)
+}
+char_num
+
+```
+  
+  
+###Apply Functions
+The apply() family pertains to the R base package and is populated with functions to manipulate slices of data from matrices, arrays, lists and dataframes in a repetitive way. These functions allow crossing the data in a number of ways and avoid explicit use of loop constructs. They act on an input list, matrix or array and apply a named function with one or several optional arguments.
+
+The apply() functions form the basis of more complex combinations and helps to perform operations with very few lines of code. More specifically, the family is made up of the apply(), lapply() , sapply(), vapply(), mapply(), rapply(), and tapply() functions.
+
+--This description of the apply() family comes from datacamp.com
+--https://www.datacamp.com/community/tutorials/r-tutorial-apply-family#gs.jtEYin0
+
+####apply  
+We use the ``apply()`` function to iterate over a matrix or array
+```{r}
+##create random matrix (big.matrix might still be around from before)
+big.matrix <- matrix(1:20, ncol = 5, nrow = 4)
+row.mean <- apply(big.matrix, 1, mean)
+col.mean <- apply(big.matrix, 2, mean)
+
+print(row.mean)
+print(col.mean)
+```
+
+####lapply  
+We use the ``lapply()`` function to iterate over a vector or list. Of note is that the output of this function is always in the form of the list.   
+
+Look at the grammys
+```{r}
+numchar_gram <- lapply(grammys, nchar)
+
+#If we want to get rid of the list:
+unlist(numchar_gram)
+```
+
+####sapply
+We use the ``sapply()`` function to do the same thing except it will try and put it into an array. 's' in sapply stands for simplify. If it can't get the result into an array it will produce the same results as ``lapply()``.  
+
+```{r}
+sn_gram <- sapply(grammys, nchar) ##USE.NAMES = FALSE will turn off names
+print(sn_gram)
+```
+
+####vapply
+We use the ``vapply()`` function to do the same thing except now we must specify the output. 
+
+```{r}
+vn_gram <- vapply(grammys, nchar, numeric(1))
+print(vn_gram)
+
+```  
+
+
+
+
+###While Loops
+
+while loops execute a chunk of code within their scope, while some logical conditions is satisfied.
+
+These loops have the potential to run infinitely if the condition remains true indefinitely. 
+
+```{r}
+i=0
+while(i<5){#very similar to for loop
+  i=i+1
+  print(i)
+}
+```
+
+
+##Dplyr 
+
+when you get new data, about 0% of the time it will be in the right format and immediately useful for modeling or analysis.
+Dplyr is the grammar of data manipulation. Let's check out how it works. 
+
+
+```{r}
+#install.packages(c("datasets", "dplyr"))
+library(datasets)
+library(dplyr)
+```
+
+```{r}
+head(airquality)
+
+```
+Dplyr runs off of a series of verbs. We'll go through a few now. 
+
+###Filter
+```{r}
+head(filter(airquality, Wind > 5))
+```
+
+```{r}
+head(filter(airquality, Temp > 80 & Month > 5))
+```
+
+###Mutate
+
+```{r}
+head(mutate(airquality, TempInC = (Temp - 32) * 5 / 9))
+```
+
+###Summarise
+
+```{r}
+summarise(airquality, mean(Temp, na.rm = TRUE))
+```
+
+What if we want to perform multiple 'verbs' on our data at once? 
+
+###Piping
+
+Piping allows us to do multiple things to data without saving each thing
+
+```{r}
+airquality %>% 
+  filter(Month != 5) %>% 
+  mutate(TempInc = (Temp - 32) * 5 / 9)
+```
+
+###Group By
+```{r}
+airquality %>% 
+    filter(Month != 5) %>% 
+    group_by(Month) %>% 
+    summarise(mean(Temp, na.rm = TRUE))
+```
