@@ -11,7 +11,11 @@ output:
 
 This will cover if statements and conditionals, looping variables in R, and then loading and cleaning data with dplyr
 
-
+R1: cleaning and visualizing 
+cleaning:
+  melt, reshape package,
+  advanced dplyr
+  ggplot
 The first bit will be a collection of very useful functions in R
 
 ###Which
@@ -208,7 +212,6 @@ library(dplyr)
 
 ```{r}
 head(airquality)
-
 ```
 Dplyr runs off of a series of verbs. We'll go through a few now. 
 

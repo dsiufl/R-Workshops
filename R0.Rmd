@@ -8,19 +8,19 @@ output:
 ---
 
 
-#Basic Operations and Functions in R 
+# Basic Operations and Functions in R 
 
-##Why Learn R?
+## Why Learn R?
 
 R is a data science specific langauge with a huge community of dedicated and helpful users in every field imaginable. Not only do Google, Microsoft, Uber, TechCrunch, P&G, the New York Times, and Bank of America  use R, but also the best academic institutions in the world in every deparment from journalism to finance to political science and biology. 
 
-The goal of this workshop, and the next 2 R workshops, is to get you all from 'man I have no idea how to do that' to 'yeah I think I could figure out how to do this.'
+The goal of this workshop, and the next 2 R workshops, is to get you all from 'I have no idea how to do that' to 'yeah I think I could figure out how to do this.'
 
 Before we get to all that, we need to set a good foundation for how R works. 
 
 We'll begin by covering data types and classes, and then look into how to create vectors and dataframes, and after that we'll work on how to manipulate your data by filtering and indexing. 
 
-##What is R?
+## What is R?
 
 R is an open source programming language and software environment for statistical computing and graphics.
 
@@ -38,7 +38,7 @@ Arguments for an R function come in an order that you must implicitley accept or
 
 R is keeps all your information in objects.  
 
-##Common data/object types
+## Common data/object types
 
 ```{r}
 #Numeric
@@ -71,7 +71,7 @@ heat_setting <- factor(c("Low", "Medium", "High"))
 print(class(heat_setting))
 ```
 
-##Data Structure Types
+## Data Structure Types
 
 Major examples include Vectors, Matrices, Arrays, Data Frames, and Lists
 
@@ -80,8 +80,6 @@ Major examples include Vectors, Matrices, Arrays, Data Frames, and Lists
 #Numerical vector
 a<-c(1,2,3,4,5,6,7)   
 print(a)
-
-
 ```
 
 ```{r}
@@ -119,11 +117,6 @@ new_matrix<-matrix(1:20,
 new_matrix
 ```
 
-```{r}
-#Empty Matrix
-empty_matrix <- matrix(NA, nrow = 5, ncol = 4)
-empty_matrix
-```
 
 ```{r}
 #Subsetting Matrices
@@ -131,7 +124,7 @@ new_matrix[1,4]
 new_matrix[5,2]
 ```
 
-### Date Frames
+### Data Frames
 
 ```{r}
 #first create vectors
@@ -146,32 +139,13 @@ studentdata
 ```
 
 ```{r}
-#Empty dataframe
-students<-data.frame(studentID=factor(),
-              age=numeric(),
-              university=factor(),
-              hired=factor()
-              )
-```
-
-
-```{r}
 #Subsetting dataframes
 studentdata[1,3]
 studentdata[1,"hired"]
 studentdata$age
 ```
 
-
-###List
-
-```{r}
-my_list<-list(a)
-print(my_list)
-
-```
-
-###Logicals
+### Logicals
 
 Logicals in R deal with ``TRUE`` and ``FALSE`` operations. These are also known as boolean operaters in many programming languages. 
 
@@ -191,67 +165,73 @@ Examples:
 3==3*1
 ```
 
-```{r}
-x<-c(-1,0,1,2,3,4)
-xx<-c(-1:4)
 
-x==xx
-x<=3
-
-y<-c(2,2,2,2,2,2)
-yy<-rep(2,6)
-
-y!=yy
-x==y
-
-##Comparing logicals
-(x<pi)==(x<=3)
-```
-
-Here we will introduce some common checks using logicals
-
-
-```{r}
-x<pi
-
-##are any values in x less than pi
-sum(x<pi) >  0
-
-##are all values greater than -1
-sum(x< -1) > 0
-
-#picking specific values by subsetting with logical vectors
-x[x<pi]
-```
-
-We can also directly manipulate logicals using the following operaters:
-
-* ``!`` ==> negation
-* ``&`` or ``&&`` ==> intersection
-* ``|`` or ``||`` ==> union
-
-The shorter form performs elementwise comparisons in much the same way as arithmetic operators. The longer form evaluates left to right examining only the first element of each vector.
-
-```{r}
-u = TRUE; v = FALSE 
-u & v          # u AND v 
-u | v          # u OR v 
-!u             # negation of u 
-```
-
-
-##Basic Functions for working with data
+## Basic Functions for working with data
 We will use the "mtcars" dataset to apply some of these ideas. This dataset is preinstalled with R to be used pretty much for the purpose of trying things out.  
 
 The **head()** function shows you the top six rows while **tail()** shows the last six rows. 
 Another useful function is the **str()** which gives a description of the structure of the data.
 
 ```{r}
-class(mtcars)
-str(mtcars)
-head(mtcars)
-tail(mtcars)
+class(airquality)
+str(airquality)
+head(airquality)
+tail(airquality)
 ```
 
+## Dplyr 
+
+when you get new data, about 0% of the time it will be in the right format and immediately useful for modeling or analysis.
+Dplyr is the grammar of data manipulation. Let's check out how it works. 
+
+
+```{r}
+#install.packages(c("datasets", "dplyr"))
+library(datasets)
+library(dplyr)
+```
+
+Dplyr runs off of a series of verbs. We'll go through a few now. 
+
+### Filter
+```{r}
+head(filter(airquality, Wind > 5))
+```
+
+```{r}
+head(filter(airquality, Temp > 80 & Month > 5))
+```
+
+### Mutate
+
+```{r}
+head(mutate(airquality, TempInC = (Temp - 32) * 5 / 9))
+```
+
+### Summarise
+
+```{r}
+summarise(airquality, mean(Temp, na.rm = TRUE))
+```
+
+What if we want to perform multiple 'verbs' on our data at once? 
+
+### Piping
+
+Piping allows us to do multiple things to data without saving each thing
+
+```{r}
+airquality %>% 
+  filter(Month != 5) %>% 
+  mutate(TempInc = (Temp - 32) * 5 / 9)
+```
+
+### Group By
+```{r}
+airquality %>% 
+    filter(Month != 5) %>% 
+    group_by(Month) %>% 
+    summarise(mean(Temp, na.rm = TRUE))
+```
 
 
