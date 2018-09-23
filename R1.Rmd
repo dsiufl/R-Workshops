@@ -9,14 +9,11 @@ output:
 
 #General Programming Concepts in R 
 
+The point of this workshop is to give you tools for analytics. It will cover tidying,  visualization, and some methods to make working in data much easier. 
+The goal is never to memorize how exactly these functions work, but to have enough exposure to understand where to go. 
+
 This will cover if statements and conditionals, looping variables in R, and then loading and cleaning data with dplyr
 
-R1: cleaning and visualizing 
-cleaning:
-  melt, reshape package,
-  advanced dplyr
-  ggplot
-The first bit will be a collection of very useful functions in R
 
 ###Which
 'Which' returns boolean values and can be used to subset dataframes
@@ -49,8 +46,8 @@ if(x > 0){
 Another example
 
 ```{r}
-UT=20
-UF=26
+UT=21
+UF=47
 if(UT>UF){
   print('Woo Hoo')
 }
@@ -58,8 +55,8 @@ if(UT>UF){
 In this case, nothing gets printed. However, if we change the symbol direction we'll see that it gets printed
 
 ```{r}
-UT=20
-UF=26
+UT=21
+UF=47
 if(UF<UT){
   print('We lost')
 } else{
@@ -119,18 +116,6 @@ report <- data.frame(ID, grade, comment)
 head(report)
 ```
 
-Let's explore Grammy awards
-
-```{r}
-grammys <- c("Chance", "Adele", "Flume", "Drake", "Chainsmokers")
-char_num <- c()
-for(name in grammys){
-  char_num[name] <- nchar(name)
-}
-char_num
-
-```
-  
   
 ###Apply Functions
 The apply() family pertains to the R base package and is populated with functions to manipulate slices of data from matrices, arrays, lists and dataframes in a repetitive way. These functions allow crossing the data in a number of ways and avoid explicit use of loop constructs. They act on an input list, matrix or array and apply a named function with one or several optional arguments.
@@ -143,44 +128,15 @@ The apply() functions form the basis of more complex combinations and helps to p
 ####apply  
 We use the ``apply()`` function to iterate over a matrix or array
 ```{r}
-##create random matrix (big.matrix might still be around from before)
-big.matrix <- matrix(1:20, ncol = 5, nrow = 4)
-row.mean <- apply(big.matrix, 1, mean)
-col.mean <- apply(big.matrix, 2, mean)
+##create random matrix (big_matrix might still be around from before)
+big_matrix <- matrix(1:20, ncol = 5, nrow = 4)
+row_mean <- apply(big_matrix, 1, mean)
+col_mean <- apply(big_matrix, 2, mean)
 
-print(row.mean)
-print(col.mean)
+print(big_matrix)
+print(row_mean)
+print(col_mean)
 ```
-
-####lapply  
-We use the ``lapply()`` function to iterate over a vector or list. Of note is that the output of this function is always in the form of the list.   
-
-Look at the grammys
-```{r}
-numchar_gram <- lapply(grammys, nchar)
-
-#If we want to get rid of the list:
-unlist(numchar_gram)
-```
-
-####sapply
-We use the ``sapply()`` function to do the same thing except it will try and put it into an array. 's' in sapply stands for simplify. If it can't get the result into an array it will produce the same results as ``lapply()``.  
-
-```{r}
-sn_gram <- sapply(grammys, nchar) ##USE.NAMES = FALSE will turn off names
-print(sn_gram)
-```
-
-####vapply
-We use the ``vapply()`` function to do the same thing except now we must specify the output. 
-
-```{r}
-vn_gram <- vapply(grammys, nchar, numeric(1))
-print(vn_gram)
-
-```  
-
-
 
 
 ###While Loops
@@ -215,43 +171,77 @@ head(airquality)
 ```
 Dplyr runs off of a series of verbs. We'll go through a few now. 
 
-###Filter
-```{r}
-head(filter(airquality, Wind > 5))
-```
-
-```{r}
-head(filter(airquality, Temp > 80 & Month > 5))
-```
-
-###Mutate
-
-```{r}
-head(mutate(airquality, TempInC = (Temp - 32) * 5 / 9))
-```
-
-###Summarise
-
-```{r}
-summarise(airquality, mean(Temp, na.rm = TRUE))
-```
-
-What if we want to perform multiple 'verbs' on our data at once? 
-
-###Piping
-
-Piping allows us to do multiple things to data without saving each thing
-
-```{r}
-airquality %>% 
-  filter(Month != 5) %>% 
-  mutate(TempInc = (Temp - 32) * 5 / 9)
-```
-
-###Group By
 ```{r}
 airquality %>% 
     filter(Month != 5) %>% 
     group_by(Month) %>% 
-    summarise(mean(Temp, na.rm = TRUE))
+    summarise(my_mean = mean(Temp, na.rm = TRUE)) 
+
+airquality %>% 
+    filter(Month != 5) %>% 
+    group_by(Month) %>% 
+    summarise(my_mean = mean(Temp, na.rm = TRUE), count_days_in_month = n()) 
+
+airquality %>% 
+    filter(Month != 5) %>% 
+    group_by(Month) %>% 
+    summarise(my_mean = mean(Temp, na.rm = TRUE), count_days_in_month = n()) %>% 
+    select(1)
+
+airquality %>% 
+    filter(Month != 5) %>% 
+    group_by(Month) %>% 
+    summarise(my_mean = mean(Temp, na.rm = TRUE), count_days_in_month = n()) %>% 
+    select(-1)
+airquality %>% 
+    filter(Month != 5) %>% 
+    group_by(Month) %>% 
+    summarise(my_mean = mean(Temp, na.rm = TRUE), count_days_in_month = n()) %>% 
+    select(1:3)
+airquality %>% 
+    filter(Month != 5) %>% 
+    group_by(Month) %>% 
+    summarise(my_mean = mean(Temp, na.rm = TRUE), count_days_in_month = n()) %>% 
+    select(my_mean)
 ```
+```{r}
+install.packages("reshape2")
+library(reshape2)
+melt(airquality, id.vars = c("Day", "Month"))
+```
+
+```{r}
+airquality
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(airquality)
+ggplot(airquality, aes(Ozone, Temp))
+ggplot(airquality, aes(Ozone, Temp)) + geom_point()
+ggplot(airquality, aes(Ozone, Temp)) + geom_point(color = "red")
+ggplot(airquality, aes(Ozone, Temp, color = Temp)) + geom_point()
+ggplot(airquality, aes(Ozone, Temp, color = Temp)) + geom_point() + geom_smooth()
+#loess is non parametric, local polynomial regressor 
+ggplot(airquality, aes(Ozone, Temp, color = Month)) + geom_point() #viewing month as continuous, need to type cast
+ggplot(airquality, aes(Ozone, Temp, color = as.factor(Month))) + geom_point()
+ggplot(airquality, aes(Ozone, Temp, color = as.factor(Month))) + geom_point() + facet_grid(. ~ Month)
+ggplot(airquality, aes(Ozone, Temp, color = as.factor(Month))) + geom_point() + facet_grid(. ~ Month) + geom_smooth(method = "lm")
+```
+
+```{r}
+library(devtools)
+install_github("thomasp85/gganimate")
+library(gganimate)
+
+ggplot(airquality, aes(Ozone, Temp, color = as.factor(Month))) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  transition_states(Month, transition_length = 3, state_length = 1) +
+  enter_fade() + 
+  exit_shrink()
+
+```
+
+
