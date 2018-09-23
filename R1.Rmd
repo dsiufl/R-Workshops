@@ -204,8 +204,9 @@ airquality %>%
     summarise(my_mean = mean(Temp, na.rm = TRUE), count_days_in_month = n()) %>% 
     select(my_mean)
 ```
+
 ```{r}
-install.packages("reshape2")
+#install.packages("reshape2")
 library(reshape2)
 melt(airquality, id.vars = c("Day", "Month"))
 ```
