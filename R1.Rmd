@@ -218,8 +218,10 @@ airquality
 ```{r}
 library(ggplot2)
 
+
 ggplot(airquality)
 ggplot(airquality, aes(Ozone, Temp))
+ggplot(airquality, aes(Temp)) + geom_histogram()
 ggplot(airquality, aes(Ozone, Temp)) + geom_point()
 ggplot(airquality, aes(Ozone, Temp)) + geom_point(color = "red")
 ggplot(airquality, aes(Ozone, Temp, color = Temp)) + geom_point()
