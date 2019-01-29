@@ -167,7 +167,6 @@ Examples:
 
 
 ### Introduction to Functions 
-R has many built in functions
 
 ```{r}
 sum.of.squares <- function(x,y) {
@@ -203,8 +202,7 @@ Dplyr is the grammar of data manipulation. Let's check out how it works.
 
 
 ```{r}
-#install.packages(c("datasets", "dplyr"))
-library(datasets)
+#install.packages("dplyr")
 library(dplyr)
 ```
 
