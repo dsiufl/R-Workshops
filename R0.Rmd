@@ -166,6 +166,23 @@ Examples:
 ```
 
 
+### Introduction to Functions 
+R has many built in functions
+
+```{r}
+sum.of.squares <- function(x,y) {
+  x^2 + y^2
+}
+sum.of.squares(2,3)
+
+fahrenheit_to_kelvin <- function(temp_F) {
+  temp_K <- ((temp_F - 32) * (5 / 9)) + 273.15
+  return(temp_K)
+}
+fahrenheit_to_kelvin(32)
+```
+
+
 ## Basic Functions for working with data
 We will use the "mtcars" dataset to apply some of these ideas. This dataset is preinstalled with R to be used pretty much for the purpose of trying things out.  
 
