@@ -1,0 +1,166 @@
+---
+title: "R2"
+subtitle: "Predicting Diabetes in Pima Indian Population"
+author: "Meghana Tatineni"
+date: "02/19/2019"
+output: 
+  prettydoc::html_pretty:
+    theme: tactile
+---
+###Introduction to Machine Learning in R 
+
+```{r message=FALSE, warning=FALSE}
+#install.packages(c("dplyr","ggplot2","caret","reshape","kernlab"))
+#Data Manipulation
+library(dplyr)
+#Visulization 
+library(ggplot2)
+#Machine Learning 
+library(caret)
+#Data Manipulation 
+library(reshape)
+#Machine Learning 
+library(kernlab)
+```
+
+The dataset is originally from National Institute of Diabetes and Digestive and Kidney Diseases. The purpose of the dataset is to diagnostically predict whether or not a patient has diabetes, based on certain diagnostic measurements included in the dataset. 
+This datset is restricted to females at least 21 years old of Pima Indian heritage. 
+```{r}
+#Read in Data 
+#Set Working Directory 
+diab<-read.csv("diabetes.csv")
+```
+
+#Exploratory Data Analysis
+After loading our data, we are performing Exploratory Data Analysis to get a sense of what we are working with and how much data cleansing and wrangling we have to do. 
+Usually 80% of the data science work is preparing the data for analysis and 20% is modeling our data.
+Thankfully, this data set is already clean so we won't be doing much data prep. This will never be the case when working on a real data science project. 
+```{r pressure}
+#Looking at Data 
+head(diab)
+str(diab)
+#Change Outcome to Factor
+diab$Outcome<- as.factor(diab$Outcome)
+#number of missing values 
+sum(is.na.data.frame(diab))
+```
+There are no NA values in this dataset so we must have no missing data. Wrong! Looking at the first couple of rows, there are 0 values for Skin Thickness, Insulin, and Glucose which does not make sense.
+Let's return the number of 0 values for each column to get an idea of how much of our data is missing.
+```{r}
+#number of 0 values 
+colSums(diab == 0)
+colSums(diab == 0)/768
+```
+
+#Cleaning Data 
+Since over 40% of the variable Insulin and 30% of SkinThickness is missing, we will remove these varibles from our dataset. 
+We are also going to replace the 0 values with NA.
+```{r}
+#Replace 0 with NA
+#remove Insulin and Skin Thickness
+diab<- diab  %>% select(-Insulin, -SkinThickness) %>% 
+  mutate_each(funs(replace(.,.==0,NA)),-Outcome,-Pregnancies) 
+```
+
+##Imputation with mean
+To deal with the zero values, we will use Imputation.Imputation is just replacing missing values with substituted values.We will replace the missing values with the mean of each feature.
+
+Read more here:https://towardsdatascience.com/how-to-handle-missing-data-8646b18db0d4
+```{r}
+#Replace missing values with Mean 
+for(i in 1:5) {
+  diab[is.na(diab[,i]),i] <- mean(diab[,i], na.rm = T)
+}
+```
+
+#Lets do some Visualization!
+Now that we fixed the missing values, lets graph the distributions of all variables for diabetics and non diabetics.
+```{r}
+#Distribution for All Variables
+library(ggplot2)
+library(reshape)
+diab_melt<-melt(diab,id.vars = "Outcome")
+ggplot(diab_melt, aes(value,fill=factor(Outcome)))+
+  facet_wrap(~variable, scales="free") +
+  geom_density()+
+  scale_fill_manual(values=c("green", "red")) +
+  labs(title="Distribution of Variables for Diabetics and Non Diabetics")
+```
+
+```{r}
+#Box Plot
+ggplot(diab, aes(x=Outcome, y=DiabetesPedigreeFunction,color=Outcome))+
+  geom_boxplot()+
+  theme_bw()+
+  scale_colour_brewer(palette = "Set2",name = "Diabetes")+
+  labs(title="Box Plots of Diabetes Pedigree Function")
+```
+
+#Lets Start Modeling 
+Before we start modeling, we need to split our data into a testing and training set.The purpose of this is to prevent overfitting.
+Here we are randomly splitting our data into 75% traning set and 25% testing set. We use the training set to train our model and the testing set to determine the accuracy of the model.
+```{r}
+#Simple Train and Test Split 
+library(caret)
+train.rows<- createDataPartition(y= diab$Outcome, p=0.75, list = FALSE)
+train<- diab[train.rows,] 
+test<- diab[-train.rows,] 
+```
+
+We can finally start the modeling our data using statistical methods and machine learning!
+
+We will be comparing four different classification technquies by using supervised Machine Learning algorithms. Supervised learning means be already know the outcome of our data. For this data, we already know the person is either diabetic or not. 
+
+We are using four Machine Learning models
+1.Logistic Regression 
+2.K Nearest Neighbors
+3.Support Vector Machine 
+
+##Logistic Regression
+Logistic regression is a simple statistical model which predicts a binary response (ex.YES/NO). For this data, we are predicting whether a woman is diabetic or not.
+
+Read more here:https://towardsdatascience.com/logistic-regression-detailed-overview-46c4da4303bc 
+```{r}
+fit_log<-glm(train$Outcome~BMI+Glucose+Pregnancies, data=train, family="binomial")
+summary(fit_log)
+predict_log<-predict(fit_log, test, type="response")
+predict_log1<-as.factor(ifelse(predict_log <.5, "0","1"))
+confusionMatrix(data = predict_log1, reference = test$Outcome, positive = "1", 
+                dnn = c("Algorithm predicted values", "Actual Test Values")) 
+```
+
+##K-nearest neighbors 
+For each test data point, we would be looking at the K nearest training data points and take the most frequently occurring classes and assign that class to the test data.
+
+Read more here:https://medium.com/@adi.bronshtein/a-quick-introduction-to-k-nearest-neighbors-algorithm-62214cea29c7 
+```{r}
+knnFit<-train(Outcome~BMI+Glucose+Pregnancies, data=train, method="knn",
+              preProcess=c("center","scale"))
+predict_data<-predict(knnFit, newdata=test)
+confusionMatrix(data = predict_data, reference = test$Outcome, positive = "1", 
+                dnn = c("Algorithm predicted values", "Actual Test Values")) 
+#plotting different number of neighbors and accuracy
+plot(knnFit)
+```
+
+##Support Vector Machine 
+Support vector machines attempt to pass a linearly separable hyperplane through a dataset to classify the data into two groups.
+
+Read more here:https://towardsdatascience.com/support-vector-machines-a-brief-overview-37e018ae310f
+```{r}
+svmfit<-train(Outcome~BMI+Glucose+Pregnancies, data=train, method="svmLinear",
+              preProcess=c("center","scale"))
+predict_data<-predict(svmfit, newdata=test)
+confusionMatrix(data = predict_data, reference = test$Outcome, 
+                dnn = c("Algorithm predicted values", "Actual Test Values"))
+
+#Tuning Paramter c with Grid Search
+grid <- expand.grid(C = c(0.01,0.1,0.5, 0.75, 1, 1.5, 1.75, 2,5))
+svm_Linear_Grid <- train(Outcome ~., data = train, method = "svmLinear",
+                           preProcess = c("center", "scale"),
+                           tuneGrid = grid)
+svm_Linear_Grid
+plot(svm_Linear_Grid)
+```
+
+To increase our classification rate, we can try tuning our parameters for each classification algorithm and try other classification algorithms such as random forests and neural networks.
